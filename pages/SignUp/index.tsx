@@ -1,30 +1,38 @@
 import React, { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Success, Form, Error, Label, Input, LinkContainer, Button, Header } from './styles';
+import useInput from '@hooks/useInput';
 
 const SignUp = () => {
-  const [email, setEmail] = useState('');
-  const [nickname, setNickname] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordCheck, setPasswordCheck] = useState('');
-  const onChangeEmail = useCallback((e) => {
-    setEmail(e.target.value);
-  }, []);
-  const onChangeNickname = useCallback((e) => {
-    setNickname(e.target.value);
-  }, []);
-  const onChangePassword = useCallback((e) => {
-    setPassword(e.target.value);
-  }, []);
-  const onChangePasswordCheck = useCallback((e) => {
-    setPasswordCheck(e.target.value);
-  }, []);
+  const [email, onChangeEmail] = useInput('');
+  const [nickname, onChangeNickname] = useInput('');
+  const [password, , setPassword] = useInput('');
+  const [passwordCheck, , setPasswordCheck] = useInput('');
+  const [mismatchError, setMismatchError] = useState(false);
+  //useCallback으로 감싸지 않으면 함수들이 매번 재생성 되어서 리렌더링이 계속 일어남
+
+  const onChangePassword = useCallback(
+    (e) => {
+      setPassword(e.target.value);
+      setMismatchError(e.target.value !== passwordCheck);
+    },
+    [passwordCheck],
+  );
+  const onChangePasswordCheck = useCallback(
+    (e) => {
+      setPasswordCheck(e.target.value);
+      setMismatchError(e.target.value !== password);
+    },
+    [password],
+  );
   const onSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      console.log(email, nickname, password, passwordCheck);
+      if (!mismatchError) {
+        console.log('서버로 회원가입하기');
+      }
     },
-    [email, nickname, password, passwordCheck],
+    [email, nickname, password, passwordCheck, mismatchError],
   );
 
   return (
@@ -60,9 +68,9 @@ const SignUp = () => {
               onChange={onChangePasswordCheck}
             />
           </div>
-          {/* {mismatchError && <Error>비밀번호가 일치하지 않습니다.</Error>}
+          {mismatchError && <Error>비밀번호가 일치하지 않습니다.</Error>}
           {!nickname && <Error>닉네임을 입력해주세요.</Error>}
-          {signUpError && <Error>{signUpError}</Error>}
+          {/* {signUpError && <Error>{signUpError}</Error>}
           {signUpSuccess && <Success>회원가입되었습니다! 로그인해주세요.</Success>} */}
         </Label>
         <Button type="submit">회원가입</Button>
