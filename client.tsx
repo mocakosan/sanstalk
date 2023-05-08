@@ -17,3 +17,8 @@ render(
   </BrowserRouter>,
   document.querySelector('#app'),
 );
+
+//폴더 구조
+// pages - 서비스 페이지
+//componenes - 세부 컴포넌트
+//layouts - 공통레이아웃

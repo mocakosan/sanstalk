@@ -11,7 +11,7 @@
     "resolveJsonModule": true, //import json을 허락
     "baseUrl": ".",
     "paths": {
-      //경로를 간단하게 path 절대 경로 설정
+      //경로를 간단하게 path 절대  경로 설정
       "@hooks/*": ["hooks/*"],
       "@components/*": ["components/*"],
       "@layouts/*": ["layouts/*"],
