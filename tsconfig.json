@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true, // import * as React from 'react'; 에서 *를 생략할수 있게 해줌
+    "sourceMap": true,
+    "lib": ["ES2020", "DOM"],
+    "jsx": "react",
+    "module": "esnext",
+    "moduleResolution": "Node",
+    "target": "es5", //es2020으로 작성하더라도 es5로 변환
+    "strict": true, //타입체크를 엄격하게 함
+    "resolveJsonModule": true, //import json을 허락
+    "baseUrl": ".",
+    "paths": {
+      //경로를 간단하게 path 절대 경로 설정
+      "@hooks/*": ["hooks/*"],
+      "@components/*": ["components/*"],
+      "@layouts/*": ["layouts/*"],
+      "@pages/*": ["pages/*"],
+      "@utils/*": ["utils/*"],
+      "@typings/*": ["typings/*"]
+    }
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs",
+      "moduleResolution": "Node",
+      "target": "es5",
+      "esModuleInterop": true
+    }
+  }
+}
