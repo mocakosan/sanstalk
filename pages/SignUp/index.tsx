@@ -1,10 +1,13 @@
 import React, { useCallback, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Redirect } from 'react-router-dom';
 import { Success, Form, Error, Label, Input, LinkContainer, Button, Header } from './styles';
 import useInput from '@hooks/useInput';
 import axios from 'axios';
+import useSWR from 'swr';
+import fetcher from '@utils/fetcher';
 
 const SignUp = () => {
+  const { data, error, mutate } = useSWR('http://localhost:3095/api/users', fetcher);
   const [email, onChangeEmail] = useInput('');
   const [nickname, onChangeNickname] = useInput('');
   const [password, , setPassword] = useInput('');
@@ -53,6 +56,13 @@ const SignUp = () => {
     },
     [email, nickname, password, passwordCheck, mismatchError],
   );
+  //return은 항상 hooks보다 아래있어야함 위에있으면 에러남
+  if (data === undefined) {
+    return <div>로딩중...</div>;
+  }
+  if (data) {
+    return <Redirect to="/workspace/channel" />;
+  }
 
   return (
     <div id="container">

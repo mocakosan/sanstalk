@@ -2,12 +2,12 @@ import React, { useCallback, useState } from 'react';
 import { Success, Form, Error, Label, Input, LinkContainer, Button, Header } from '@pages/SignUp/styles';
 import useInput from '@hooks/useInput';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, Redirect } from 'react-router-dom';
 import useSWR from 'swr';
 import fetcher from '@utils/fetcher';
 
 const LogIn = () => {
-  const { data, error } = useSWR('http://localhost:3095/api/users', fetcher);
+  const { data, error, mutate } = useSWR('http://localhost:3095/api/users', fetcher);
   const [email, onChangeEmail] = useInput('');
   const [password, onChangePassword] = useInput('');
   const [logInError, setLogInError] = useState(false);
@@ -23,13 +23,22 @@ const LogIn = () => {
             withCredentials: true,
           },
         )
-        .then((response) => {})
+        .then(() => {
+          mutate();
+        })
         .catch((error) => {
           setLogInError(error.response?.status === 401);
         });
     },
-    [email, password],
+    [email, password, mutate],
   );
+  if (data === undefined) {
+    return <div>로딩중...</div>;
+  }
+  if (data) {
+    //data에 내정보가 들어있으면 실행 : 로그인하는순간 바로 워크스페이스 채널로 이동
+    return <Redirect to="/workspace/channel" />;
+  }
   return (
     <div id="container">
       <Header>Sleact</Header>
