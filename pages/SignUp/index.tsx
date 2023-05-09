@@ -56,7 +56,7 @@ const SignUp = () => {
     },
     [email, nickname, password, passwordCheck, mismatchError],
   );
-  //return은 항상 hooks보다 아래있어야함 위에있으면 에러남d
+  //return은 항상 hooks보다 아래있어야함 위에있으면 에러남
   if (data === undefined) {
     return <div>로딩중...</div>;
   }
