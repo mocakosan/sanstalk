@@ -8,7 +8,7 @@ import fetcher from '@utils/fetcher';
 
 const SignUp = () => {
   //revalidate : 서버에 요청을 다시 보내서 데이터를 다시 가져오는거 , mutate : 서버에 요청을 다시 안보내고 저장하는거
-  const { data, error, mutate } = useSWR('http://localhost:3095/api/users', fetcher);
+  const { data, error, mutate } = useSWR('/api/users', fetcher);
   const [email, onChangeEmail] = useInput('');
   const [nickname, onChangeNickname] = useInput('');
   const [password, , setPassword] = useInput('');
@@ -39,7 +39,7 @@ const SignUp = () => {
         console.log('서버로 회원가입하기');
         setSignUpSuccess(false);
         axios
-          .post('http://localhost:3095/api/users', { email, nickname, password })
+          .post('/api/users', { email, nickname, password })
           .then((res) => {
             console.log(res);
             setSignUpSuccess(true);
