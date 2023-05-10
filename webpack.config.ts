@@ -81,7 +81,7 @@ const config: Configuration = {
   },
   devServer: {
     historyApiFallback: true, // react router
-    port: 3090,
+    port: 3095,
     devMiddleware: { publicPath: '/dist/' },
     static: { directory: path.resolve(__dirname) },
   },

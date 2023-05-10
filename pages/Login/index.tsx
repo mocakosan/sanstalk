@@ -7,7 +7,8 @@ import useSWR from 'swr';
 import fetcher from '@utils/fetcher';
 
 const LogIn = () => {
-  const { data, error, mutate } = useSWR('http://localhost:3095/api/users', fetcher);
+  const { data: userData, error, mutate } = useSWR('http://localhost:3095/api/users', fetcher);
+  console.log(userData);
   const [email, onChangeEmail] = useInput('');
   const [password, onChangePassword] = useInput('');
   const [logInError, setLogInError] = useState(false);
@@ -24,7 +25,7 @@ const LogIn = () => {
           },
         )
         .then((res) => {
-          mutate(res.data, false); //OPTIMISTIC UI (true) : 먼저 성공했다고 생각하고나서 점검하는것
+          mutate(); //OPTIMISTIC UI (true) : 먼저 성공했다고 생각하고나서 점검하는것
         })
         .catch((error) => {
           setLogInError(error.response?.status === 401);
@@ -32,12 +33,9 @@ const LogIn = () => {
     },
     [email, password, mutate],
   );
-  if (data === undefined) {
-    return <div>로딩중...</div>;
-  }
-  if (data) {
-    //data에 내정보가 들어있으면 실행 : 로그인하는순간 바로 워크스페이스 채널로 이동
-    return <Redirect to="/workspace/channel" />;
+  if (!error && userData) {
+    console.log('로그인됨', userData);
+    return <Redirect to="/workspace/sleact/channel/일반" />;
   }
   return (
     <div id="container">

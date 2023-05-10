@@ -12,6 +12,11 @@ const Menu: FC<Props> = ({ children, style, show, onCloseModal, closeButton }) =
   const stopPropagation = useCallback((e) => {
     e.stopPropagation();
   }, []);
+
+  //show가 false면 화면에서 안보이게
+  if (!show) {
+    return null;
+  }
   return (
     <CreateMenu onClick={onCloseModal}>
       <div onClick={stopPropagation}>
