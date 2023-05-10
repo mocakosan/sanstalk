@@ -7,6 +7,7 @@ import useSWR from 'swr';
 import fetcher from '@utils/fetcher';
 
 const SignUp = () => {
+  //revalidate : 서버에 요청을 다시 보내서 데이터를 다시 가져오는거 , mutate : 서버에 요청을 다시 안보내고 저장하는거
   const { data, error, mutate } = useSWR('http://localhost:3095/api/users', fetcher);
   const [email, onChangeEmail] = useInput('');
   const [nickname, onChangeNickname] = useInput('');

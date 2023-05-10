@@ -23,8 +23,8 @@ const LogIn = () => {
             withCredentials: true,
           },
         )
-        .then(() => {
-          mutate();
+        .then((res) => {
+          mutate(res.data, false); //OPTIMISTIC UI (true) : 먼저 성공했다고 생각하고나서 점검하는것
         })
         .catch((error) => {
           setLogInError(error.response?.status === 401);
