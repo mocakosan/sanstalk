@@ -13,7 +13,7 @@ const Channel = () => {
   return (
     <Container>
       <Header>channel</Header>
-      <ChatList />
+      {/* <ChatList chatSections={chatSections} /> */}
       <ChatBox chat={chat} onChangeChat={onChangeChat} onSubmitForm={onSubmitForm} />
     </Container>
   );
