@@ -1,4 +1,4 @@
-import { IDM } from '@typings/db';
+import { IChat, IDM, IUser } from '@typings/db';
 import React, { VFC, memo, useMemo } from 'react';
 import { ChatWrapper } from './styles';
 import gravatar from 'gravatar';
@@ -7,13 +7,13 @@ import regexifyString from 'regexify-string';
 import { Link, useParams } from 'react-router-dom';
 
 interface Props {
-  data: IDM;
+  data: IDM | IChat;
 }
 
 const Chat: VFC<Props> = ({ data }) => {
   const { workspace } = useParams<{ workspace: string; channel: string }>();
   //data안에 Sender라는 키가 있음
-  const user = data.Sender;
+  const user: IUser = 'Sender' in data ? data.Sender : data.User;
 
   //@[이름](id)
   // \d 숫자 , + 는 1개이상, ?는 0개나1개, *이 0개 이상

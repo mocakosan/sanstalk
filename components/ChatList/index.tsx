@@ -1,26 +1,31 @@
 import Chat from '@components/Chat';
 import { ChatZone, Section, StickyHeader } from '@components/ChatList/styles';
-import { IDM } from '@typings/db';
-import React, { forwardRef, useCallback } from 'react';
+import { IChat, IDM } from '@typings/db';
+import React, { ForwardedRef, RefObject, forwardRef, useCallback, VFC } from 'react';
 import { Scrollbars } from 'react-custom-scrollbars';
 
 interface Props {
-  chatSections: { [key: string]: IDM[] };
-  setSize: (f: (size: number) => number) => Promise<IDM[][] | undefined>;
+  scrollbarRef: RefObject<Scrollbars>;
+  isReachingEnd?: boolean;
   isEmpty: boolean;
-  isReachingEnd: boolean;
+  chatSections: { [key: string]: (IDM | IChat)[] };
+  setSize: (f: (size: number) => number) => Promise<(IDM | IChat)[][] | undefined>;
 }
 
-const ChatList = forwardRef<Scrollbars, Props>(({ chatSections, setSize, isEmpty, isReachingEnd }, ref) => {
-  const onScroll = useCallback((values) => {
-    if (values.scrollTop === 0 && isReachingEnd) {
-      //데이터 추가로딩
-      setSize((prevSize) => prevSize + 1);
-    }
-  }, []);
+const ChatList: VFC<Props> = ({ scrollbarRef, isReachingEnd, isEmpty, chatSections, setSize }) => {
+  const onScroll = useCallback(
+    (values) => {
+      if (values.scrollTop === 0 && !isReachingEnd && !isEmpty) {
+        setSize((size) => size + 1).then(() => {
+          scrollbarRef.current?.scrollTop(scrollbarRef.current?.getScrollHeight() - values.scrollHeight);
+        });
+      }
+    },
+    [setSize, scrollbarRef, isReachingEnd, isEmpty],
+  );
   return (
     <ChatZone>
-      <Scrollbars autoHide ref={ref} onScrollFrame={onScroll}>
+      <Scrollbars autoHide ref={scrollbarRef} onScrollFrame={onScroll}>
         {Object.entries(chatSections).map(([date, chats]) => {
           return (
             <Section className={`section-${date}`} key={date}>
@@ -36,6 +41,6 @@ const ChatList = forwardRef<Scrollbars, Props>(({ chatSections, setSize, isEmpty
       </Scrollbars>
     </ChatZone>
   );
-});
+};
 
 export default ChatList;
