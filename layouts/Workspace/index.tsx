@@ -1,6 +1,6 @@
 import fetcher from '@utils/fetcher';
 import axios from 'axios';
-import React, { VFC, useCallback, useState } from 'react';
+import React, { VFC, useCallback, useEffect, useState } from 'react';
 import { Redirect, Route, Switch, useParams } from 'react-router';
 import useSWR from 'swr';
 import {
@@ -33,6 +33,8 @@ import InviteWorkspaceModal from '@components/InviteWorkspaceModal';
 import InviteChannelModal from '@components/InviteChannelModal';
 import DMList from '@components/DMList';
 import ChannelList from '@components/ChannelList';
+import { disconnect } from 'process';
+import useSocket from '@hooks/useSocket';
 
 const Channel = loadable(() => import('@pages/Channel'));
 const DM = loadable(() => import('@pages/DM'));
@@ -49,6 +51,20 @@ const Workspace: VFC = () => {
   const { workspace } = useParams<{ workspace: string }>();
   const { data: useData, error, mutate } = useSWR<IUser | false>('/api/users', fetcher);
   const { data: channelData } = useSWR<IChannel[]>(useData ? `/api/workspaces/${workspace}/channels` : null, fetcher);
+  const [socket, disconnect] = useSocket(workspace);
+
+  useEffect(() => {
+    //채널 데이터랑 유저아이디,socket이 존재하는경우
+    if (channelData && useData && socket) {
+      console.log(socket);
+      socket.emit('login', { id: useData.id, channels: channelData.map((v) => v.id) });
+    }
+  }, [socket, channelData, useData]);
+  useEffect(() => {
+    return () => {
+      disconnect();
+    };
+  }, [workspace, disconnect]);
   const onLogout = useCallback(() => {
     axios
       .post('/api/users/logout', null, {
@@ -57,7 +73,7 @@ const Workspace: VFC = () => {
       .then(() => {
         mutate(false, false);
       });
-  }, []);
+  }, [mutate]);
   //프로필사진을 누르면 사용자 메뉴 나오는 토글 버튼
   const onClickUserProfile = useCallback(() => {
     setShowUserMenu((prev) => !prev);
@@ -199,11 +215,11 @@ const Workspace: VFC = () => {
         onCloseModal={onCloseModal}
         setShowInviteWorkspaceModal={setShowInviteWorkspaceModal}
       />
-      <InviteChannelModal
+      {/* <InviteChannelModal
         show={showInviteChannelModal}
         onCloseModal={onCloseModal}
         setShowInviteChannelModal={setShowInviteChannelModal}
-      />
+      /> */}
     </div>
   );
 };
