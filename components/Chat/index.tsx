@@ -1,5 +1,5 @@
 import { IChat, IDM, IUser } from '@typings/db';
-import React, { VFC, memo, useMemo } from 'react';
+import React, { FC, memo, useMemo } from 'react';
 import { ChatWrapper } from './styles';
 import gravatar from 'gravatar';
 import dayjs from 'dayjs';
@@ -10,7 +10,8 @@ interface Props {
   data: IDM | IChat;
 }
 
-const Chat: VFC<Props> = ({ data }) => {
+const Chat: FC<Props> = memo(({ data }) => {
+  console.log('@@@', data);
   const { workspace } = useParams<{ workspace: string; channel: string }>();
   //data안에 Sender라는 키가 있음
   const user: IUser = 'Sender' in data ? data.Sender : data.User;
@@ -22,7 +23,6 @@ const Chat: VFC<Props> = ({ data }) => {
   const result = useMemo(
     () =>
       regexifyString({
-        input: data.content,
         pattern: /@\[(.+?)]\((\d+?)\)|\n/g,
         decorator(match, index) {
           const arr = match.match(/@\[(.+?)]\((\d+?)\)/)!;
@@ -35,9 +35,11 @@ const Chat: VFC<Props> = ({ data }) => {
           }
           return <br key={index} />;
         },
+        input: data.content,
       }),
-    [data.content],
+    [data.content, workspace],
   );
+  console.log('@@@@@', result);
   return (
     <ChatWrapper>
       <div className="chat-img">
@@ -52,6 +54,6 @@ const Chat: VFC<Props> = ({ data }) => {
       </div>
     </ChatWrapper>
   );
-};
+});
 
-export default memo(Chat);
+export default Chat;

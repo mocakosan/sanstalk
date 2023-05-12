@@ -1,7 +1,7 @@
 import Chat from '@components/Chat';
 import { ChatZone, Section, StickyHeader } from '@components/ChatList/styles';
 import { IChat, IDM } from '@typings/db';
-import React, { ForwardedRef, RefObject, forwardRef, useCallback, VFC } from 'react';
+import React, { ForwardedRef, RefObject, forwardRef, useCallback, FC } from 'react';
 import { Scrollbars } from 'react-custom-scrollbars';
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
   setSize: (f: (size: number) => number) => Promise<(IDM | IChat)[][] | undefined>;
 }
 
-const ChatList: VFC<Props> = ({ scrollbarRef, isReachingEnd, isEmpty, chatSections, setSize }) => {
+const ChatList: FC<Props> = ({ scrollbarRef, isReachingEnd, isEmpty, chatSections, setSize }) => {
   const onScroll = useCallback(
     (values) => {
       if (values.scrollTop === 0 && !isReachingEnd && !isEmpty) {
@@ -23,6 +23,7 @@ const ChatList: VFC<Props> = ({ scrollbarRef, isReachingEnd, isEmpty, chatSectio
     },
     [setSize, scrollbarRef, isReachingEnd, isEmpty],
   );
+  console.log('chatSections', chatSections);
   return (
     <ChatZone>
       <Scrollbars autoHide ref={scrollbarRef} onScrollFrame={onScroll}>
@@ -32,9 +33,9 @@ const ChatList: VFC<Props> = ({ scrollbarRef, isReachingEnd, isEmpty, chatSectio
               <StickyHeader>
                 <button>{date}</button>
               </StickyHeader>
-              {chats.map((chat) => {
-                <Chat key={chat.id} data={chat} />;
-              })}
+              {chats.map((chat) => (
+                <Chat key={chat.id} data={chat} />
+              ))}
             </Section>
           );
         })}

@@ -2,7 +2,7 @@ import { ChatArea, EachMention, Form, MentionsTextarea, SendButton, Toolbox } fr
 import React, { VFC, useCallback, useEffect, useRef } from 'react';
 import autosize from 'autosize';
 import { Mention, SuggestionDataItem } from 'react-mentions';
-import { IUserWithOnline } from '@typings/db';
+import { IUser, IUserWithOnline } from '@typings/db';
 import fetcher from '@utils/fetcher';
 import useSWR from 'swr';
 import { useParams } from 'react-router';
@@ -13,9 +13,10 @@ interface Props {
   onSubmitForm: (e: any) => void;
   onChangeChat: (e: any) => void;
   placeholder?: string;
+  data?: IUser[];
 }
 
-const ChatBox: VFC<Props> = ({ chat, onSubmitForm, onChangeChat, placeholder }) => {
+const ChatBox: VFC<Props> = ({ chat, onSubmitForm, onChangeChat, placeholder, data }) => {
   const { workspace } = useParams<{ workspace: string }>();
   const { data: userData } = useSWR('/api/users', fetcher, {
     dedupingInterval: 2000,
