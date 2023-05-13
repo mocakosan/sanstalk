@@ -1,8 +1,8 @@
-import { IDM } from '@typings/db';
+import { IDM, IChat } from '@typings/db';
 import dayjs from 'dayjs';
 
-export default function makeSection(chatList: IDM[]) {
-  const sections: { [key: string]: IDM[] } = {};
+export default function makeSection(chatList: (IChat | IDM)[]) {
+  const sections: { [key: string]: (IChat | IDM)[] } = {};
   chatList.forEach((chat) => {
     const monthDate = dayjs(chat.createdAt).format('YYYY-MM-DD');
     if (Array.isArray(sections[monthDate])) {

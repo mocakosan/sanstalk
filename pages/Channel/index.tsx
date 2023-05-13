@@ -1,13 +1,15 @@
 import ChatBox from '@components/ChatBox';
 import ChatList from '@components/ChatList';
+import InviteChannelModal from '@components/InviteChannelModal';
 import useInput from '@hooks/useInput';
 import useSocket from '@hooks/useSocket';
 import { DragOver } from '@pages/Channel/styles';
 import { Header, Container } from '@pages/DM/styles';
-import { IDM } from '@typings/db';
+import { IChannel, IChat, IDM, IUser } from '@typings/db';
 import fetcher from '@utils/fetcher';
 import makeSection from '@utils/makeSection';
 import axios from 'axios';
+import { channel } from 'diagnostics_channel';
 import gravatar from 'gravatar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Scrollbars } from 'react-custom-scrollbars';
@@ -17,17 +19,17 @@ import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 
 const PAGE_SIZE = 20;
-const DirectMessage = () => {
-  const { workspace, id } = useParams<{ workspace: string; id: string }>();
+const Channel = () => {
+  const { workspace, channel } = useParams<{ workspace: string; channel: string }>();
+  const [showInviteChannelModal, setShowInviteChannelModal] = useState(false);
   const [socket] = useSocket(workspace);
   const { data: myData } = useSWR('/api/users', fetcher);
-  const { data: userData } = useSWR(`/api/workspaces/${workspace}/users/${id}`, fetcher);
   const {
     data: chatData,
     mutate: mutateChat,
     setSize,
-  } = useSWRInfinite<IDM[]>(
-    (index) => `/api/workspaces/${workspace}/dms/${id}/chats?perPage=${PAGE_SIZE}&page=${index + 1}`,
+  } = useSWRInfinite<IChat[]>(
+    (index) => `/api/workspaces/${workspace}/channels/${channel}/chats?perPage=${PAGE_SIZE}&page=${index + 1}`,
     fetcher,
     {
       onSuccess(data) {
@@ -39,6 +41,12 @@ const DirectMessage = () => {
       },
     },
   );
+  const { data: channelMembersData } = useSWR<IUser[]>(
+    myData ? `/api/workspaces/${workspace}/channels/${channel}/members` : null,
+    fetcher,
+  );
+  const { data: channelsData } = useSWR<IChannel[]>(`/api/workspaces/${workspace}/channels`, fetcher);
+  const channelData = channelsData?.find((v) => v.name === channel);
   const [chat, onChangeChat, setChat] = useInput('');
   const scrollbarRef = useRef<Scrollbars>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -49,21 +57,21 @@ const DirectMessage = () => {
   const onSubmitForm = useCallback(
     (e) => {
       e.preventDefault();
-      if (chat?.trim() && chatData) {
+      if (chat?.trim() && chatData && channelData) {
         const savedChat = chat;
         mutateChat((prevChatData) => {
           prevChatData?.[0].unshift({
             id: (chatData[0][0]?.id || 0) + 1,
             content: savedChat,
-            SenderId: myData.id,
-            Sender: myData,
-            ReceiverId: userData.id,
-            Receiver: userData,
+            UserId: myData.id,
+            User: myData,
+            ChannelId: channelData.id,
+            Channel: channelData,
             createdAt: new Date(),
           });
           return prevChatData;
         }, false).then(() => {
-          localStorage.setItem(`${workspace}-${id}`, new Date().getTime().toString());
+          // localStorage.setItem(`${workspace}-${id}`, new Date().getTime().toString());
           setChat('');
           if (scrollbarRef.current) {
             console.log('scrollToBottom!', scrollbarRef.current?.getValues());
@@ -71,18 +79,25 @@ const DirectMessage = () => {
           }
         });
         axios
-          .post(`/api/workspaces/${workspace}/dms/${id}/chats`, {
+          .post(`/api/workspaces/${workspace}/channels/${channel}/chats`, {
             content: chat,
           })
           .catch(console.error);
       }
     },
-    [chat, workspace, id, myData, userData, chatData, mutateChat, setChat],
+    [chat, workspace, channel, myData, channelData, chatData, mutateChat, setChat],
   );
 
+  const onClickInviteChannel = useCallback(() => {
+    setShowInviteChannelModal(true);
+  }, []);
+  const onCloseModal = useCallback(() => {
+    setShowInviteChannelModal(false);
+  }, []);
+
   const onMessage = useCallback(
-    (data: IDM) => {
-      if (data.SenderId === Number(id) && myData.id !== Number(id)) {
+    (data: IChat) => {
+      if (data.Channel.name === channel && data.UserId !== myData.id) {
         mutateChat((chatData) => {
           chatData?.[0].unshift(data);
           return chatData;
@@ -108,13 +123,13 @@ const DirectMessage = () => {
         });
       }
     },
-    [id, myData, mutateChat],
+    [channel, myData],
   );
 
   useEffect(() => {
-    socket?.on('dm', onMessage);
+    socket?.on('message', onMessage);
     return () => {
-      socket?.off('dm', onMessage);
+      socket?.off('message', onMessage);
     };
   }, [socket, onMessage]);
 
@@ -159,17 +174,28 @@ const DirectMessage = () => {
   //   setDragOver(true);
   // }, []);
 
-  if (!userData || !myData) {
+  if (!myData || !myData) {
     return null;
   }
 
-  const chatSections = makeSection(chatData ? ([] as IDM[]).concat(...chatData).reverse() : []);
+  const chatSections = makeSection(chatData ? chatData.flat().reverse() : []);
 
   return (
     <Container>
       <Header>
-        <img src={gravatar.url(userData.email, { s: '24px', d: 'retro' })} alt={userData.nickname} />
-        <span>{userData.nickname}</span>
+        <span>#{channel}</span>
+        <div className="header-right">
+          <span>{channelMembersData?.length}</span>
+          <button
+            onClick={onClickInviteChannel}
+            className="c-button-unstyled p-ia__view_header__button"
+            aria-label="Add people to #react-native"
+            data-sk="tooltip_parent"
+            type="button"
+          >
+            <i className="c-icon p-ia__view_header__button_icon c-icon--add-user" aria-hidden="true" />
+          </button>
+        </div>
       </Header>
       <ChatList
         scrollbarRef={scrollbarRef}
@@ -182,12 +208,17 @@ const DirectMessage = () => {
         onSubmitForm={onSubmitForm}
         chat={chat}
         onChangeChat={onChangeChat}
-        placeholder={`Message ${userData.nickname}`}
+        placeholder={`Message ${myData.nickname}`}
         data={[]}
+      />
+      <InviteChannelModal
+        show={showInviteChannelModal}
+        onCloseModal={onCloseModal}
+        setShowInviteChannelModal={setShowInviteChannelModal}
       />
       {/* {dragOver && <DragOver>업로드!</DragOver>} */}
     </Container>
   );
 };
 
-export default DirectMessage;
+export default Channel;

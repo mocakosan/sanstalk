@@ -49,17 +49,17 @@ const Workspace: VFC = () => {
   const [newWorkspace, onChangeNewWorkspace, setNewWorkSpace] = useInput('');
   const [newUrl, onChangeNewUrl, setNewUrl] = useInput('');
   const { workspace } = useParams<{ workspace: string }>();
-  const { data: useData, error, mutate } = useSWR<IUser | false>('/api/users', fetcher);
-  const { data: channelData } = useSWR<IChannel[]>(useData ? `/api/workspaces/${workspace}/channels` : null, fetcher);
+  const { data: userData, error, mutate } = useSWR<IUser | false>('/api/users', fetcher);
+  const { data: channelData } = useSWR<IChannel[]>(userData ? `/api/workspaces/${workspace}/channels` : null, fetcher);
   const [socket, disconnect] = useSocket(workspace);
 
   useEffect(() => {
     //채널 데이터랑 유저아이디,socket이 존재하는경우
-    if (channelData && useData && socket) {
+    if (channelData && userData && socket) {
       console.log(socket);
-      socket.emit('login', { id: useData.id, channels: channelData.map((v) => v.id) });
+      socket.emit('login', { id: userData.id, channels: channelData.map((v) => v.id) });
     }
-  }, [socket, channelData, useData]);
+  }, [socket, channelData, userData]);
   useEffect(() => {
     return () => {
       disconnect();
@@ -133,7 +133,7 @@ const Workspace: VFC = () => {
   const onClickInviteWorkspace = useCallback(() => {
     setShowInviteWorkspaceModal(true);
   }, []);
-  if (!useData) {
+  if (!userData) {
     //로그아웃 버튼을 누르는순간 data가 false가 되니까 로그인 페이지로 이동
     return <Redirect to="/login" />;
   }
@@ -142,13 +142,13 @@ const Workspace: VFC = () => {
       <Header>
         <RightMenu>
           <span onClick={onClickUserProfile}>
-            <ProfileImg src={gravatar.url(useData.email, { s: '28px', d: 'retro' })} alt={useData.email} />
+            <ProfileImg src={gravatar.url(userData.email, { s: '28px', d: 'retro' })} alt={userData.nickname} />
             {showUserMenu && (
               <Menu style={{ right: 0, top: 38 }} show={showUserMenu} onCloseModal={onClickUserProfile}>
                 <ProfileModal>
-                  <img src={gravatar.url(useData.email, { s: '28px', d: 'retro' })} alt={useData.email} />
+                  <img src={gravatar.url(userData.nickname, { s: '28px', d: 'retro' })} alt={userData.nickname} />
                   <div>
-                    <span id="profile-name">{useData.nickname}</span>
+                    <span id="profile-name">{userData.nickname}</span>
                     <span id="profile-active">Active</span>
                   </div>
                 </ProfileModal>
@@ -161,7 +161,7 @@ const Workspace: VFC = () => {
 
       <WorkspaceWrapper>
         <Workspaces>
-          {useData?.Workspaces.map((ws) => {
+          {userData?.Workspaces.map((ws) => {
             return (
               <Link key={ws.id} to={`/workspace/${123}/channel/일반`}>
                 <WorkspaceButton>{ws.name.slice(0, 1).toUpperCase()}</WorkspaceButton>

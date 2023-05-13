@@ -11,7 +11,6 @@ interface Props {
 }
 
 const Chat: FC<Props> = memo(({ data }) => {
-  console.log('@@@', data);
   const { workspace } = useParams<{ workspace: string; channel: string }>();
   //data안에 Sender라는 키가 있음
   const user: IUser = 'Sender' in data ? data.Sender : data.User;
@@ -39,7 +38,7 @@ const Chat: FC<Props> = memo(({ data }) => {
       }),
     [data.content, workspace],
   );
-  console.log('@@@@@', result);
+
   return (
     <ChatWrapper>
       <div className="chat-img">
