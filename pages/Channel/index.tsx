@@ -13,7 +13,7 @@ import { channel } from 'diagnostics_channel';
 import gravatar from 'gravatar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Scrollbars } from 'react-custom-scrollbars';
-import { useParams } from 'react-router';
+import { Redirect, useParams } from 'react-router';
 import { toast } from 'react-toastify';
 import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
@@ -24,6 +24,7 @@ const Channel = () => {
   const [showInviteChannelModal, setShowInviteChannelModal] = useState(false);
   const [socket] = useSocket(workspace);
   const { data: myData } = useSWR('/api/users', fetcher);
+  const { data: userData } = useSWR<IUser>('/api/users', fetcher);
   const {
     data: chatData,
     mutate: mutateChat,
@@ -42,7 +43,7 @@ const Channel = () => {
     },
   );
   const { data: channelMembersData } = useSWR<IUser[]>(
-    myData ? `/api/workspaces/${workspace}/channels/${channel}/members` : null,
+    userData ? `/api/workspaces/${workspace}/channels/${channel}/members` : null,
     fetcher,
   );
   const { data: channelsData } = useSWR<IChannel[]>(`/api/workspaces/${workspace}/channels`, fetcher);
@@ -54,10 +55,20 @@ const Channel = () => {
   const isEmpty = chatData?.[0]?.length === 0;
   const isReachingEnd = isEmpty || (chatData && chatData[chatData.length - 1]?.length < PAGE_SIZE);
 
+  useEffect(() => {
+    if (chatData?.length === 1) {
+      console.log('toBottomWhenLoaded', scrollbarRef.current);
+      setTimeout(() => {
+        console.log('scrollbar', scrollbarRef.current);
+        scrollbarRef.current?.scrollToBottom();
+      }, 500);
+    }
+  }, [chatData]);
+
   const onSubmitForm = useCallback(
     (e) => {
       e.preventDefault();
-      if (chat?.trim() && chatData && channelData) {
+      if (chat?.trim() && chatData && channelData && userData) {
         const savedChat = chat;
         mutateChat((prevChatData) => {
           prevChatData?.[0].unshift({
@@ -71,7 +82,7 @@ const Channel = () => {
           });
           return prevChatData;
         }, false).then(() => {
-          // localStorage.setItem(`${workspace}-${id}`, new Date().getTime().toString());
+          localStorage.setItem(`${workspace}-${channel}`, new Date().getTime().toString());
           setChat('');
           if (scrollbarRef.current) {
             console.log('scrollToBottom!', scrollbarRef.current?.getValues());
@@ -85,7 +96,7 @@ const Channel = () => {
           .catch(console.error);
       }
     },
-    [chat, workspace, channel, myData, channelData, chatData, mutateChat, setChat],
+    [chat, workspace, channel, channelData, userData, chatData, mutateChat, setChat],
   );
 
   const onClickInviteChannel = useCallback(() => {
@@ -97,7 +108,10 @@ const Channel = () => {
 
   const onMessage = useCallback(
     (data: IChat) => {
-      if (data.Channel.name === channel && data.UserId !== myData.id) {
+      if (
+        data.Channel.name === channel &&
+        (data.content.startsWith('uploads\\') || data.content.startsWith('uploads/') || data.UserId !== userData?.id)
+      ) {
         mutateChat((chatData) => {
           chatData?.[0].unshift(data);
           return chatData;
@@ -123,7 +137,7 @@ const Channel = () => {
         });
       }
     },
-    [channel, myData],
+    [channel, mutateChat, userData],
   );
 
   useEffect(() => {
@@ -133,59 +147,59 @@ const Channel = () => {
     };
   }, [socket, onMessage]);
 
-  // useEffect(() => {
-  //   localStorage.setItem(`${workspace}-${id}`, new Date().getTime().toString());
-  // }, [workspace, id]);
+  useEffect(() => {
+    localStorage.setItem(`${workspace}-${channel}}`, new Date().getTime().toString());
+  }, [workspace, channel]);
 
-  // const onDrop = useCallback(
-  //   (e) => {
-  //     e.preventDefault();
-  //     console.log(e);
-  //     const formData = new FormData();
-  //     if (e.dataTransfer.items) {
-  //       // Use DataTransferItemList interface to access the file(s)
-  //       for (let i = 0; i < e.dataTransfer.items.length; i++) {
-  //         // If dropped items aren't files, reject them
-  //         if (e.dataTransfer.items[i].kind === 'file') {
-  //           const file = e.dataTransfer.items[i].getAsFile();
-  //           console.log('... file[' + i + '].name = ' + file.name);
-  //           formData.append('image', file);
-  //         }
-  //       }
-  //     } else {
-  //       // Use DataTransfer interface to access the file(s)
-  //       for (let i = 0; i < e.dataTransfer.files.length; i++) {
-  //         console.log('... file[' + i + '].name = ' + e.dataTransfer.files[i].name);
-  //         formData.append('image', e.dataTransfer.files[i]);
-  //       }
-  //     }
-  //     axios.post(`/api/workspaces/${workspace}/dms/${id}/images`, formData).then(() => {
-  //       setDragOver(false);
-  //       localStorage.setItem(`${workspace}-${id}`, new Date().getTime().toString());
-  //       mutateChat();
-  //     });
-  //   },
-  //   [workspace, id, mutateChat],
-  // );
+  //화면에 직접 이미지 드래그해서 옮기기
+  const onDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      console.log(e);
+      const formData = new FormData();
+      if (e.dataTransfer.items) {
+        // Use DataTransferItemList interface to access the file(s)
+        for (let i = 0; i < e.dataTransfer.items.length; i++) {
+          // If dropped items aren't files, reject them
+          if (e.dataTransfer.items[i].kind === 'file') {
+            const file = e.dataTransfer.items[i].getAsFile();
+            console.log('... file[' + i + '].name = ' + file.name);
+            formData.append('image', file);
+          }
+        }
+      } else {
+        // Use DataTransfer interface to access the file(s)
+        for (let i = 0; i < e.dataTransfer.files.length; i++) {
+          console.log('... file[' + i + '].name = ' + e.dataTransfer.files[i].name);
+          formData.append('image', e.dataTransfer.files[i]);
+        }
+      }
+      axios.post(`/api/workspaces/${workspace}/dms/${channel}/images`, formData).then(() => {
+        setDragOver(false);
+        localStorage.setItem(`${workspace}-${channel}`, new Date().getTime().toString());
+        mutateChat();
+      });
+    },
+    [workspace, channel],
+  );
 
-  // const onDragOver = useCallback((e) => {
-  //   e.preventDefault();
-  //   console.log(e);
-  //   setDragOver(true);
-  // }, []);
+  const onDragOver = useCallback((e) => {
+    e.preventDefault();
+    console.log(e);
+    setDragOver(true);
+  }, []);
 
-  if (!myData || !myData) {
-    return null;
+  if (channelsData && !channelData) {
+    return <Redirect to={`/workspace/${workspace}/channel/일반`} />;
   }
-
   const chatSections = makeSection(chatData ? chatData.flat().reverse() : []);
 
   return (
-    <Container>
+    <Container onDrop={onDrop} onDragOver={onDragOver}>
       <Header>
         <span>#{channel}</span>
-        <div className="header-right">
-          <span>{channelMembersData?.length}</span>
+        <div className="header-right" style={{ display: 'flex' }}>
+          <span style={{ display: 'flex', alignItems: 'center' }}>{channelMembersData?.length}</span>
           <button
             onClick={onClickInviteChannel}
             className="c-button-unstyled p-ia__view_header__button"
@@ -216,7 +230,7 @@ const Channel = () => {
         onCloseModal={onCloseModal}
         setShowInviteChannelModal={setShowInviteChannelModal}
       />
-      {/* {dragOver && <DragOver>업로드!</DragOver>} */}
+      {dragOver && <DragOver>업로드!</DragOver>}
     </Container>
   );
 };

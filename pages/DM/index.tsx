@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import { Container, Header } from '@pages/DM/styles';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Container, DragOver, Header } from '@pages/DM/styles';
 import gravata from 'gravatar';
 import fetcher from '@utils/fetcher';
 import useSWR from 'swr';
@@ -13,12 +13,14 @@ import { IDM } from '@typings/db';
 import makeSection from '@utils/makeSection';
 import Scrollbars from 'react-custom-scrollbars';
 import useSocket from '@hooks/useSocket';
+import { channel } from 'diagnostics_channel';
 
 const PAGE_SIZE = 20;
 const DM = () => {
   const { workspace, id } = useParams<{ workspace: string; id: string }>();
   //소켓 연결
   const [socket] = useSocket(workspace);
+  const [dragOver, setDragOver] = useState(false);
   const { data: userData } = useSWR(`/api/workspaces/${workspace}/users/${id}`, fetcher);
   const { data: myData } = useSWR('/api/users', fetcher);
   //채팅을 받아오는 api
@@ -65,6 +67,7 @@ const DM = () => {
           });
           return prevChatData;
         }, false).then(() => {
+          localStorage.setItem(`${workspace}-${id}`, new Date().getTime().toString());
           //채팅 등록한다음에 채팅창 글자지우기
           setChat('');
           //채팅치는순간 밑으로 내려가게
@@ -127,14 +130,55 @@ const DM = () => {
     }
   }, [chatData]);
 
+  useEffect(() => {
+    localStorage.setItem(`${workspace}-${id}`, new Date().getTime().toString());
+  }, [workspace, id]);
+
+  const onDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      console.log(e);
+      const formData = new FormData();
+      if (e.dataTransfer.items) {
+        // Use DataTransferItemList interface to access the file(s)
+        for (let i = 0; i < e.dataTransfer.items.length; i++) {
+          // If dropped items aren't files, reject them
+          if (e.dataTransfer.items[i].kind === 'file') {
+            const file = e.dataTransfer.items[i].getAsFile();
+            console.log('... file[' + i + '].name = ' + file.name);
+            formData.append('image', file);
+          }
+        }
+      } else {
+        // Use DataTransfer interface to access the file(s)
+        for (let i = 0; i < e.dataTransfer.files.length; i++) {
+          console.log('... file[' + i + '].name = ' + e.dataTransfer.files[i].name);
+          formData.append('image', e.dataTransfer.files[i]);
+        }
+      }
+      axios.post(`/api/workspaces/${workspace}/dms/${id}/images`, formData).then(() => {
+        setDragOver(false);
+        localStorage.setItem(`${workspace}-${id}`, new Date().getTime().toString());
+        mutateChat();
+      });
+    },
+    [workspace, id, mutateChat],
+  );
+
+  const onDragOver = useCallback((e) => {
+    e.preventDefault();
+    console.log(e);
+    setDragOver(true);
+  }, []);
+
   if (!userData || !myData) {
     return null;
   }
 
   const chatSections = makeSection(chatData ? chatData.flat().reverse() : []);
-  console.log('content', chatSections);
+
   return (
-    <Container>
+    <Container onDrop={onDrop} onDragOver={onDragOver}>
       <Header>
         <img src={gravata.url(userData.email, { s: '24px', d: 'retro' })} alt={userData.nickname} />
         <span>{userData.nickname}</span>
@@ -146,7 +190,14 @@ const DM = () => {
         isReachingEnd={isReachingEnd}
         isEmpty={isEmpty}
       />
-      <ChatBox chat={chat} onChangeChat={onChangeChat} onSubmitForm={onSubmitForm} data={[]} />
+      <ChatBox
+        onSubmitForm={onSubmitForm}
+        chat={chat}
+        onChangeChat={onChangeChat}
+        placeholder={`Message ${userData.nickname}`}
+        data={[]}
+      />
+      {dragOver && <DragOver>업로드!</DragOver>}
     </Container>
   );
 };

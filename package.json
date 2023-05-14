@@ -12,6 +12,7 @@
   "dependencies": {
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
+    "@jjordy/swr-devtools": "^2.2.0",
     "@loadable/component": "^5.15.3",
     "@types/gravatar": "^1.8.3",
     "@types/react": "^17.0.59",

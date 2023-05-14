@@ -10,6 +10,8 @@ interface Props {
   data: IDM | IChat;
 }
 
+const BACK_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:3095' : 'https://sleact.nodebird.com';
+
 const Chat: FC<Props> = memo(({ data }) => {
   const { workspace } = useParams<{ workspace: string; channel: string }>();
   //data안에 Sender라는 키가 있음
@@ -19,24 +21,28 @@ const Chat: FC<Props> = memo(({ data }) => {
   // \d 숫자 , + 는 1개이상, ?는 0개나1개, *이 0개 이상
   //useMemo : 개별 훅스값 캐싱
   //memo 부모 컴포넌트가 바뀌어도 자식 컴포넌트는 props가 바뀌지 않는이상 바뀌지 않는다
-  const result = useMemo(
+  const result = useMemo<(string | JSX.Element)[] | JSX.Element>(
     () =>
-      regexifyString({
-        pattern: /@\[(.+?)]\((\d+?)\)|\n/g,
-        decorator(match, index) {
-          const arr = match.match(/@\[(.+?)]\((\d+?)\)/)!;
-          if (arr) {
-            return (
-              <Link key={match + index} to={`/workspace/${workspace}/dm/${arr[2]}`}>
-                @{arr[1]}
-              </Link>
-            );
-          }
-          return <br key={index} />;
-        },
-        input: data.content,
-      }),
-    [data.content, workspace],
+      data.content.startsWith('uploads\\') || data.content.startsWith('uploads/') ? (
+        <img src={`${BACK_URL}/${data.content}`} style={{ maxHeight: 200 }} />
+      ) : (
+        regexifyString({
+          pattern: /@\[(.+?)]\((\d+?)\)|\n/g,
+          decorator(match, index) {
+            const arr: string[] | null = match.match(/@\[(.+?)]\((\d+?)\)/)!;
+            if (arr) {
+              return (
+                <Link key={match + index} to={`/workspace/${workspace}/dm/${arr[2]}`}>
+                  @{arr[1]}
+                </Link>
+              );
+            }
+            return <br key={index} />;
+          },
+          input: data.content,
+        })
+      ),
+    [workspace, data.content],
   );
 
   return (
