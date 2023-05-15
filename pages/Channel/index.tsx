@@ -9,12 +9,11 @@ import { IChannel, IChat, IDM, IUser } from '@typings/db';
 import fetcher from '@utils/fetcher';
 import makeSection from '@utils/makeSection';
 import axios from 'axios';
-import { channel } from 'diagnostics_channel';
-import gravatar from 'gravatar';
+//import gravatar from 'gravatar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Scrollbars } from 'react-custom-scrollbars';
 import { Redirect, useParams } from 'react-router';
-import { toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 
@@ -23,8 +22,9 @@ const Channel = () => {
   const { workspace, channel } = useParams<{ workspace: string; channel: string }>();
   const [showInviteChannelModal, setShowInviteChannelModal] = useState(false);
   const [socket] = useSocket(workspace);
-  const { data: myData } = useSWR('/api/users', fetcher);
   const { data: userData } = useSWR<IUser>('/api/users', fetcher);
+  const { data: channelsData } = useSWR<IChannel[]>(`/api/workspaces/${workspace}/channels`, fetcher);
+  const channelData = channelsData?.find((v) => v.name === channel);
   const {
     data: chatData,
     mutate: mutateChat,
@@ -46,8 +46,7 @@ const Channel = () => {
     userData ? `/api/workspaces/${workspace}/channels/${channel}/members` : null,
     fetcher,
   );
-  const { data: channelsData } = useSWR<IChannel[]>(`/api/workspaces/${workspace}/channels`, fetcher);
-  const channelData = channelsData?.find((v) => v.name === channel);
+
   const [chat, onChangeChat, setChat] = useInput('');
   const scrollbarRef = useRef<Scrollbars>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -55,15 +54,19 @@ const Channel = () => {
   const isEmpty = chatData?.[0]?.length === 0;
   const isReachingEnd = isEmpty || (chatData && chatData[chatData.length - 1]?.length < PAGE_SIZE);
 
-  useEffect(() => {
-    if (chatData?.length === 1) {
-      console.log('toBottomWhenLoaded', scrollbarRef.current);
-      setTimeout(() => {
-        console.log('scrollbar', scrollbarRef.current);
-        scrollbarRef.current?.scrollToBottom();
-      }, 500);
-    }
-  }, [chatData]);
+  // useEffect(() => {
+  //   if (chatData?.length === 1) {
+  //     console.log('toBottomWhenLoaded', scrollbarRef.current);
+  //     setTimeout(() => {
+  //       console.log('scrollbar', scrollbarRef.current);
+  //       scrollbarRef.current?.scrollToBottom();
+  //     }, 500);
+  //   }
+  // }, [chatData]);
+
+  const onCloseModal = useCallback(() => {
+    setShowInviteChannelModal(false);
+  }, []);
 
   const onSubmitForm = useCallback(
     (e) => {
@@ -74,8 +77,8 @@ const Channel = () => {
           prevChatData?.[0].unshift({
             id: (chatData[0][0]?.id || 0) + 1,
             content: savedChat,
-            UserId: myData.id,
-            User: myData,
+            UserId: userData.id,
+            User: userData,
             ChannelId: channelData.id,
             Channel: channelData,
             createdAt: new Date(),
@@ -98,13 +101,6 @@ const Channel = () => {
     },
     [chat, workspace, channel, channelData, userData, chatData, mutateChat, setChat],
   );
-
-  const onClickInviteChannel = useCallback(() => {
-    setShowInviteChannelModal(true);
-  }, []);
-  const onCloseModal = useCallback(() => {
-    setShowInviteChannelModal(false);
-  }, []);
 
   const onMessage = useCallback(
     (data: IChat) => {
@@ -151,6 +147,10 @@ const Channel = () => {
     localStorage.setItem(`${workspace}-${channel}}`, new Date().getTime().toString());
   }, [workspace, channel]);
 
+  const onClickInviteChannel = useCallback(() => {
+    setShowInviteChannelModal(true);
+  }, []);
+
   //화면에 직접 이미지 드래그해서 옮기기
   const onDrop = useCallback(
     (e) => {
@@ -161,23 +161,23 @@ const Channel = () => {
         // Use DataTransferItemList interface to access the file(s)
         for (let i = 0; i < e.dataTransfer.items.length; i++) {
           // If dropped items aren't files, reject them
+          console.log(e.dataTransfer.items[i]);
           if (e.dataTransfer.items[i].kind === 'file') {
             const file = e.dataTransfer.items[i].getAsFile();
-            console.log('... file[' + i + '].name = ' + file.name);
+            console.log(e, '.... file[' + i + '].name = ' + file.name);
             formData.append('image', file);
           }
         }
       } else {
         // Use DataTransfer interface to access the file(s)
         for (let i = 0; i < e.dataTransfer.files.length; i++) {
-          console.log('... file[' + i + '].name = ' + e.dataTransfer.files[i].name);
+          console.log(e, '... file[' + i + '].name = ' + e.dataTransfer.files[i].name);
           formData.append('image', e.dataTransfer.files[i]);
         }
       }
-      axios.post(`/api/workspaces/${workspace}/dms/${channel}/images`, formData).then(() => {
+      axios.post(`/api/workspaces/${workspace}/channels/${channel}/images`, formData).then(() => {
         setDragOver(false);
         localStorage.setItem(`${workspace}-${channel}`, new Date().getTime().toString());
-        mutateChat();
       });
     },
     [workspace, channel],
@@ -198,8 +198,8 @@ const Channel = () => {
     <Container onDrop={onDrop} onDragOver={onDragOver}>
       <Header>
         <span>#{channel}</span>
-        <div className="header-right" style={{ display: 'flex' }}>
-          <span style={{ display: 'flex', alignItems: 'center' }}>{channelMembersData?.length}</span>
+        <div style={{ display: 'flex', flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+          <span>{channelMembersData?.length}</span>
           <button
             onClick={onClickInviteChannel}
             className="c-button-unstyled p-ia__view_header__button"
@@ -222,14 +222,15 @@ const Channel = () => {
         onSubmitForm={onSubmitForm}
         chat={chat}
         onChangeChat={onChangeChat}
-        placeholder={`Message ${myData.nickname}`}
-        data={[]}
+        placeholder={`Message #${channel}`}
+        data={channelMembersData}
       />
       <InviteChannelModal
         show={showInviteChannelModal}
         onCloseModal={onCloseModal}
         setShowInviteChannelModal={setShowInviteChannelModal}
       />
+      <ToastContainer position="bottom-center" />
       {dragOver && <DragOver>업로드!</DragOver>}
     </Container>
   );

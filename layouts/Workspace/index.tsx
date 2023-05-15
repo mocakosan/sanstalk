@@ -199,7 +199,7 @@ const Workspace: VFC = () => {
             <Input id="workspace" value={newWorkspace} onChange={onChangeNewWorkspace} />
           </Label>
           <Label id="workspace-url-label">
-            <span>워크스페이스 이름</span>
+            <span>워크스페이스 url</span>
             <Input id="workspace" value={newUrl} onChange={onChangeNewUrl} />
           </Label>
           <Button type="submit">생성하기</Button>
@@ -215,11 +215,11 @@ const Workspace: VFC = () => {
         onCloseModal={onCloseModal}
         setShowInviteWorkspaceModal={setShowInviteWorkspaceModal}
       />
-      {/* <InviteChannelModal
+      <InviteChannelModal
         show={showInviteChannelModal}
         onCloseModal={onCloseModal}
         setShowInviteChannelModal={setShowInviteChannelModal}
-      /> */}
+      />
     </div>
   );
 };
