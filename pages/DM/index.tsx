@@ -13,7 +13,6 @@ import { IDM } from '@typings/db';
 import makeSection from '@utils/makeSection';
 import Scrollbars from 'react-custom-scrollbars';
 import useSocket from '@hooks/useSocket';
-import { channel } from 'diagnostics_channel';
 
 const PAGE_SIZE = 20;
 const DM = () => {
@@ -53,7 +52,6 @@ const DM = () => {
     (e) => {
       e.preventDefault();
       if (chat?.trim() && chatData) {
-        //딜레이 없애는것
         const savedChat = chat;
         mutateChat((prevChatData) => {
           prevChatData?.[0].unshift({
@@ -68,9 +66,7 @@ const DM = () => {
           return prevChatData;
         }, false).then(() => {
           localStorage.setItem(`${workspace}-${id}`, new Date().getTime().toString());
-          //채팅 등록한다음에 채팅창 글자지우기
           setChat('');
-          //채팅치는순간 밑으로 내려가게
           if (scrollbarRef.current) {
             console.log('scrollToBottom!', scrollbarRef.current?.getValues());
             scrollbarRef.current.scrollToBottom();
@@ -80,9 +76,6 @@ const DM = () => {
           .post(`/api/workspaces/${workspace}/dms/${id}/chats`, {
             content: chat,
           })
-          // .then(() => {
-          //   mutateChat();
-          // })
           .catch(console.error);
       }
     },

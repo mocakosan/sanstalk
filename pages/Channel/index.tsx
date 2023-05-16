@@ -230,7 +230,10 @@ const Channel = () => {
         onCloseModal={onCloseModal}
         setShowInviteChannelModal={setShowInviteChannelModal}
       />
-      <ToastContainer position="bottom-center" />
+      {/* <ToastContainer
+        style={{ width: '1000px', height: '50px', display: 'flex', flexDirection: 'row' }}
+        position="bottom-center"
+      /> */}
       {dragOver && <DragOver>업로드!</DragOver>}
     </Container>
   );
