@@ -15,7 +15,9 @@ const EachChannel: VFC<Props> = ({ channel }) => {
   const { data: userData } = useSWR<IUser>('/api/users', fetcher, {
     dedupingInterval: 2000, // 2초
   });
+  //console.log('userdata', userData);
   const date = localStorage.getItem(`${workspace}-${channel.name}`) || 0;
+  console.log('date', new Date(date), userData);
   const { data: count, mutate } = useSWR<number>( // 채팅 갯수 가져오는 api , count:n개
     userData ? `/api/workspaces/${workspace}/channels/${channel.name}/unreads?after=${date}` : null,
     fetcher,
@@ -27,12 +29,12 @@ const EachChannel: VFC<Props> = ({ channel }) => {
     if (location.pathname === `/workspace/${workspace}/channel/${channel.name}`) {
       mutate(0);
     }
-  }, [mutate, location.pathname, workspace, channel.name]);
+  }, [mutate, location.pathname, workspace, channel]);
 
   return (
     <NavLink key={channel.name} activeClassName="selected" to={`/workspace/${workspace}/channel/${channel.name}`}>
       <span className={count !== undefined && count > 0 ? 'bold' : undefined}># {channel.name}</span>
-      {count !== undefined && count > 0 && <span className="count">{count}</span>}
+      {count !== undefined && count > 0 && <span className="count">{count}</span>}3
     </NavLink>
   );
 };

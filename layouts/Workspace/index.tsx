@@ -33,7 +33,6 @@ import InviteWorkspaceModal from '@components/InviteWorkspaceModal';
 import InviteChannelModal from '@components/InviteChannelModal';
 import DMList from '@components/DMList';
 import ChannelList from '@components/ChannelList';
-import { disconnect } from 'process';
 import useSocket from '@hooks/useSocket';
 
 const Channel = loadable(() => import('@pages/Channel'));
@@ -49,7 +48,13 @@ const Workspace: VFC = () => {
   const [newWorkspace, onChangeNewWorkspace, setNewWorkSpace] = useInput('');
   const [newUrl, onChangeNewUrl, setNewUrl] = useInput('');
   const { workspace } = useParams<{ workspace: string }>();
-  const { data: userData, error, mutate } = useSWR<IUser | false>('/api/users', fetcher);
+  const {
+    data: userData,
+    error,
+    mutate,
+  } = useSWR<IUser | false>('/api/users', fetcher, {
+    dedupingInterval: 2000, // 2초
+  });
   const { data: channelData } = useSWR<IChannel[]>(userData ? `/api/workspaces/${workspace}/channels` : null, fetcher);
   const [socket, disconnect] = useSocket(workspace);
 

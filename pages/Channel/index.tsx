@@ -192,7 +192,7 @@ const Channel = () => {
   if (channelsData && !channelData) {
     return <Redirect to={`/workspace/${workspace}/channel/일반`} />;
   }
-  const chatSections = makeSection(chatData ? chatData.flat().reverse() : []);
+  const chatSections = makeSection(chatData ? ([] as IChat[]).concat(...chatData).reverse() : []);
 
   return (
     <Container onDrop={onDrop} onDragOver={onDragOver}>
